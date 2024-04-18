@@ -58,6 +58,12 @@ parameters:
     type: enum
     enum: [unknown, pending, in_progress, cancelled, failed, rolled_back, successful]
     default: unknown
+  state_script:
+    description: >
+      A script to determine the state of the build/deployment. If set, this will override the `state` parameter.
+      The script should output a valid Jira state.
+    type: string
+    default: ""
 steps:
   - run:
       when: on_fail
@@ -71,6 +77,7 @@ steps:
       environment:
         JIRA_VAL_JOB_TYPE: <<parameters.job_type>>
         JIRA_VAL_STATE: <<parameters.state>>
+        JIRA_VAL_STATE_SCRIPT: <<parameters.state_script>>
         JOB_STATUS: "successful"
       command: <<include(scripts/detect.sh)>>
   - run:
