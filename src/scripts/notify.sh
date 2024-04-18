@@ -94,11 +94,18 @@ getIssueKeys() {
   local TAG_KEYS
   TAG_KEYS="$(getTagKeys)"
 
+  # Parse keys from script result
+  local SCRIPT_OUTPUT
+  SCRIPT_OUTPUT="$(/bin/bash -c "$JIRA_VAL_ISSUE_KEYS_SCRIPT")"
+  local SCRIPT_KEYS
+  SCRIPT_KEYS="$(parseKeys "$SCRIPT_OUTPUT")"
+
   # Check if the parsed keys are not empty before adding to the array.
   [[ -n "$BRANCH_KEYS" ]] && KEY_ARRAY+=("$BRANCH_KEYS")
   [[ -n "$COMMIT_KEYS" ]] && KEY_ARRAY+=("$COMMIT_KEYS")
   [[ -n "$BODY_KEYS" ]] && KEY_ARRAY+=("$BODY_KEYS")
   [[ -n "$TAG_KEYS" ]] && KEY_ARRAY+=("$TAG_KEYS")
+  [[ -n "$SCRIPT_KEYS" ]] && KEY_ARRAY+=("$SCRIPT_KEYS")
 
   # Remove duplicates
   remove_duplicates "${KEY_ARRAY[@]}"
@@ -111,6 +118,7 @@ getIssueKeys() {
     dbgmessage+="  Commit: $COMMIT_MESSAGE\n"
     dbgmessage+="  Body: $COMMIT_BODY\n"
     dbgmessage+="  Tag: $(git tag --points-at HEAD -l --format='%(tag) %(subject)' )\n"
+    dbgmessage+="  Script output: $SCRIPT_OUTPUT\n"
     echo "$message"
     echo -e "$dbgmessage"
     printf "\nSkipping Jira notification\n\n"
@@ -229,6 +237,7 @@ JIRA_VAL_ENVIRONMENT=$(circleci env subst "${JIRA_VAL_ENVIRONMENT}")
 JIRA_VAL_ENVIRONMENT_TYPE=$(circleci env subst "${JIRA_VAL_ENVIRONMENT_TYPE}")
 JIRA_VAL_STATE_PATH=$(circleci env subst "${JIRA_VAL_STATE_PATH}")
 JIRA_VAL_SERVICE_ID=$(circleci env subst "${JIRA_VAL_SERVICE_ID}")
+JIRA_VAL_ISSUE_KEYS_SCRIPT=$(circleci env subst "${JIRA_VAL_ISSUE_KEYS_SCRIPT}")
 JIRA_VAL_ISSUE_REGEXP=$(circleci env subst "${JIRA_VAL_ISSUE_REGEXP}")
 JIRA_VAL_JIRA_OIDC_TOKEN=$(circleci env subst "${JIRA_VAL_JIRA_OIDC_TOKEN}")
 JIRA_VAL_JIRA_WEBHOOK_URL=$(circleci env subst "${JIRA_VAL_JIRA_WEBHOOK_URL}")
@@ -267,6 +276,7 @@ export JIRA_VAL_ENVIRONMENT
 export JIRA_VAL_ENVIRONMENT_TYPE
 export JIRA_VAL_STATE_PATH
 export JIRA_VAL_SERVICE_ID
+export JIRA_VAL_ISSUE_KEYS_SCRIPT
 export JIRA_VAL_ISSUE_REGEXP
 export JIRA_VAL_PIPELINE_ID
 export JIRA_VAL_PIPELINE_NUMBER

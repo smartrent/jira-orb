@@ -21,6 +21,14 @@ parameters:
     description: Specify the JSD service ID for the project this notification targets. This will be sent with deployment notifications.
     type: string
     default: "${JIRA_SERVICE_ID}"
+  issue_keys_script:
+    description: >
+      A script to determine the issue keys for the build/deployment. This will add to the detected keys from the commit, branch, and tag.
+      The script can output a list of issue keys or a block of text to be parsed for issues. It is useful in
+      situations where you might want to consider a specific git history or results of an API request when
+      building a list of issues.
+    type: string
+    default: ""
   issue_regexp:
     description: Override the default project key regexp if your project keys follow a different format. Your key must be in the [1] capture group.
     default: ([A-Z]{2,30}-[0-9]+)
@@ -86,6 +94,7 @@ steps:
         JIRA_VAL_ENVIRONMENT: <<parameters.environment>>
         JIRA_VAL_ENVIRONMENT_TYPE: <<parameters.environment_type>>
         JIRA_VAL_SERVICE_ID: <<parameters.service_id>>
+        JIRA_VAL_ISSUE_KEYS_SCRIPT: <<parameters.issue_keys_script>>
         JIRA_VAL_ISSUE_REGEXP: <<parameters.issue_regexp>>
         JIRA_VAL_PIPELINE_ID: <<parameters.pipeline_id>>
         JIRA_VAL_PIPELINE_NUMBER: <<parameters.pipeline_number>>
