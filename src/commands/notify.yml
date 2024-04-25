@@ -72,6 +72,15 @@ parameters:
       The script should output a valid Jira state.
     type: string
     default: ""
+  when:
+    description: >
+      The condition in which the notification should be sent. By default, the notification will always
+      be sent. This is useful in cases you want to selectively report multiple times in a single job
+      or separate successful reporting into a separate job that can be rerun if the Jira request fails
+      without having to rerun the entire build.
+    type: enum
+    enum: [always, on_fail, on_success]
+    default: always
 steps:
   - run:
       when: on_fail
@@ -100,6 +109,7 @@ steps:
         JIRA_VAL_PIPELINE_NUMBER: <<parameters.pipeline_number>>
         JIRA_VAL_JIRA_WEBHOOK_URL: <<parameters.webhook_url>>
         JIRA_VAL_JIRA_OIDC_TOKEN: <<parameters.oidc_token>>
+        JIRA_VAL_WHEN: <<parameters.when>>
         JSON_BUILD_PAYLOAD: <<include(scripts/build_payload.json)>>
         JSON_DEPLOYMENT_PAYLOAD: <<include(scripts/deployment_payload.json)>>
         JIRA_BOOL_DEBUG: <<parameters.debug>>
