@@ -241,6 +241,7 @@ JIRA_VAL_ISSUE_KEYS_SCRIPT=$(circleci env subst "${JIRA_VAL_ISSUE_KEYS_SCRIPT}")
 JIRA_VAL_ISSUE_REGEXP=$(circleci env subst "${JIRA_VAL_ISSUE_REGEXP}")
 JIRA_VAL_JIRA_OIDC_TOKEN=$(circleci env subst "${JIRA_VAL_JIRA_OIDC_TOKEN}")
 JIRA_VAL_JIRA_WEBHOOK_URL=$(circleci env subst "${JIRA_VAL_JIRA_WEBHOOK_URL}")
+JIRA_VAL_WHEN=$(circleci env subst "${JIRA_VAL_WHEN}")
 # Add the log parameter to the URL
 JIRA_VAL_JIRA_WEBHOOK_URL="${JIRA_VAL_JIRA_WEBHOOK_URL}?verbosity=${JIRA_LOG_LEVEL}"
 # JIRA_VAL_PIPELINE_ID - pipeline id
@@ -254,6 +255,16 @@ JIRA_BUILD_STATUS=$(cat /tmp/circleci_jira_status)
 PROJECT_VCS=""
 PROJECT_SLUG=""
 JIRA_ISSUE_KEYS=() # Set in getIssueKeys
+
+# Everything except failed is a success status. If any previous steps errors,
+# the status is also forced to failed and will be checked here
+job_status=$([[ "$JIRA_BUILD_STATUS" =~ "fail" ]] && echo "fail" || echo "success")
+if [[ "$JIRA_VAL_WHEN" != "always" && ! "$JIRA_VAL_WHEN" =~ $job_status ]]; then
+  echo "Job status: $job_status"
+  echo "Notify condition: $JIRA_VAL_WHEN"
+  echo "Condition mismatch. Skipping notification send"
+  errorOut 0
+fi
 
 if [[ "$JIRA_BUILD_STATUS" == "failed" && -f "/tmp/circleci_jira_failed_reported" ]]; then
   echo "Failed status previously reported in this workflow. Skipping"
