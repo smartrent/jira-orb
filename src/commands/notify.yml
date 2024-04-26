@@ -81,18 +81,31 @@ parameters:
     type: enum
     enum: [always, on_fail, on_success]
     default: always
+  base_revision:
+    description: The base revision of the build/deployment to use when detecting issue keys from commit messages.
+    type: string
+    default: "main"
+  detect_rollback:
+    type: boolean
+    description: >
+      Detect if the deployment is a rollback if the HEAD commit is not the same as the base revision. This would
+      indicate that an older job was rerun to redeploy other changes.
+    default: false
 steps:
   - run:
       when: on_fail
       name: "Jira - Detecting Job Status: Failed"
       environment:
         JOB_STATUS: "failed"
+        JIRA_VAL_BASE_REVISION: <<parameters.base_revision>>
       command: <<include(scripts/detect.sh)>>
   - run:
       when: on_success
       name: "Jira - Detecting Job Status: Successful"
       environment:
         JIRA_VAL_JOB_TYPE: <<parameters.job_type>>
+        JIRA_VAL_BASE_REVISION: <<parameters.base_revision>>
+        JIRA_BOOL_DETECT_ROLLBACK: <<parameters.detect_rollback>>
         JIRA_VAL_STATE: <<parameters.state>>
         JIRA_VAL_STATE_SCRIPT: <<parameters.state_script>>
         JOB_STATUS: "successful"

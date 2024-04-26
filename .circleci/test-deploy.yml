@@ -28,6 +28,7 @@ commands:
           command: |
             git config --global user.email "test@example.com"
             git config --global user.name "Test User"
+            git config --global init.defaultBranch main
             rm -rf .git
             git init
 
