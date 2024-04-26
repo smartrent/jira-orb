@@ -88,8 +88,7 @@ getIssueKeys() {
   local BRANCH_KEYS
   BRANCH_KEYS="$(parseKeys "$CIRCLE_BRANCH")"
   local COMMIT_KEYS
-  COMMIT_KEYS="$(parseKeys "$COMMIT_MESSAGE")"
-  BODY_KEYS="$(parseKeys "$COMMIT_BODY")"
+  COMMIT_KEYS="$(parseKeys "$COMMIT_MESSAGES")"
   log "GETTING TAG KEYS"
   local TAG_KEYS
   TAG_KEYS="$(getTagKeys)"
@@ -103,7 +102,6 @@ getIssueKeys() {
   # Check if the parsed keys are not empty before adding to the array.
   [[ -n "$BRANCH_KEYS" ]] && KEY_ARRAY+=("$BRANCH_KEYS")
   [[ -n "$COMMIT_KEYS" ]] && KEY_ARRAY+=("$COMMIT_KEYS")
-  [[ -n "$BODY_KEYS" ]] && KEY_ARRAY+=("$BODY_KEYS")
   [[ -n "$TAG_KEYS" ]] && KEY_ARRAY+=("$TAG_KEYS")
   [[ -n "$SCRIPT_KEYS" ]] && KEY_ARRAY+=("$SCRIPT_KEYS")
 
@@ -113,11 +111,10 @@ getIssueKeys() {
 
   # Exit if no keys found
   if [[ ${#KEY_ARRAY[@]} -eq 0 ]]; then
-    local message="No issue keys found in branch, commit message, or tag"
+    local message="No issue keys found in branch, commits, or tag"
     local dbgmessage="  Branch: $CIRCLE_BRANCH\n"
-    dbgmessage+="  Commit: $COMMIT_MESSAGE\n"
-    dbgmessage+="  Body: $COMMIT_BODY\n"
     dbgmessage+="  Tag: $(git tag --points-at HEAD -l --format='%(tag) %(subject)' )\n"
+    dbgmessage+="  Commits: $COMMIT_MESSAGES\n"
     dbgmessage+="  Script output: $SCRIPT_OUTPUT\n"
     echo "$message"
     echo -e "$dbgmessage"
@@ -248,9 +245,7 @@ JIRA_VAL_JIRA_WEBHOOK_URL="${JIRA_VAL_JIRA_WEBHOOK_URL}?verbosity=${JIRA_LOG_LEV
 # JIRA_VAL_PIPELINE_NUMBER - pipeline number
 TIME_EPOCH=$(date +%s)
 TIME_STAMP=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
-# JIRA_DEBUG_TEST_COMMIT is only used in testing
-COMMIT_MESSAGE=$(git show -s --format='%s' "${JIRA_DEBUG_TEST_COMMIT:-$CIRCLE_SHA1}")
-COMMIT_BODY=$(git show -s --format='%b' "${JIRA_DEBUG_TEST_COMMIT:-$CIRCLE_SHA1}")
+COMMIT_MESSAGES=$([[ -f /tmp/circleci_jira_commit_messages ]] && cat /tmp/circleci_jira_commit_messages || echo "")
 JIRA_BUILD_STATUS=$(cat /tmp/circleci_jira_status)
 PROJECT_VCS=""
 PROJECT_SLUG=""
@@ -293,7 +288,7 @@ export JIRA_VAL_PIPELINE_ID
 export JIRA_VAL_PIPELINE_NUMBER
 export TIME_EPOCH
 export TIME_STAMP
-export COMMIT_MESSAGE
+export COMMIT_MESSAGES
 export COMMIT_BODY
 export JIRA_BUILD_STATUS
 export PROJECT_SLUG
