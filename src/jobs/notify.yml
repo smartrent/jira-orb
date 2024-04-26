@@ -1,0 +1,121 @@
+description: >
+  Send a Jira notification as a separate job. Useful for cases where you want the notification to be
+  separate so it can safely be resent if the initial request fails without rerunning the entire build.
+docker:
+  - image: <<parameters.image>>
+parameters:
+  base_revision:
+    description: The base revision of the build/deployment to use when detecting issue keys from commit messages.
+    type: string
+    default: "main"
+  detect_rollback:
+    type: boolean
+    description: >
+      Detect if the deployment is a rollback if the HEAD commit is not the same as the base revision. This would
+      indicate that an older job was rerun to redeploy other changes.
+    default: false
+  debug:
+    description: "Enable additional logging if you are running into issues. A log will be generated at '/tmp/circleci_jira.log'."
+    type: boolean
+    default: false
+  environment_type:
+    description: Indicates the category of target environment as defined by Atlassian
+    type: enum
+    enum: ["production", "staging", "testing", "development", "unmapped"]
+    default: "development"
+  environment:
+    description: For deployments. Indicates the name of target environment. By default the name of the CircleCI Job is used.
+    default: "${CIRCLE_JOB}"
+    type: string
+  ignore_errors:
+    description: "Ignore errors. Errors posting to Atlassian will not result in failed builds unless disabled."
+    type: boolean
+    default: false
+  image:
+    description: The Docker image to use for the job.
+    type: string
+    default: cimg/base:current
+  issue_keys_script:
+    description: >
+      A script to determine the issue keys for the build/deployment. This will add to the detected keys from the commit, branch, and tag.
+      The script can output a list of issue keys or a block of text to be parsed for issues. It is useful in
+      situations where you might want to consider a specific git history or results of an API request when
+      building a list of issues.
+    type: string
+    default: ""
+  issue_regexp:
+    description: Override the default project key regexp if your project keys follow a different format. Your key must be in the [1] capture group.
+    default: ([A-Z]{2,30}-[0-9]+)
+    type: string
+  job_type:
+    description: Indicates if job should be treated as build or deployment in Jira dev panel. Note that Deployments require additional details.
+    default: "build"
+    type: enum
+    enum: ["build", "deployment"]
+  oidc_token:
+    description: Customize the OpenID Connect token used to authenticate with Jira. This most often will not need to be changed.
+    type: string
+    default: "${CIRCLE_OIDC_TOKEN_V2}"
+  pipeline_id:
+    description: Pass in the pipeline id via CircleCI pipeline parameters. This must be specified manually. Refer to usage example.
+    type: string
+  pipeline_number:
+    description: Pass in the pipeline number via CircleCI pipeline parameters. This must be specified manually. Refer to usage example.
+    type: integer
+  service_id:
+    description: Specify the JSD service ID for the project this notification targets. This will be sent with deployment notifications.
+    type: string
+    default: "${JIRA_SERVICE_ID}"
+  webhook_url:
+    description: Get your webhook URL from the management panel in the CircleCI for Jira app in Atlassian.
+    type: string
+    default: "${JIRA_WEBHOOK_URL}"
+  state_script:
+    description: >
+      A script to determine the state of the build/deployment. If set, this will override the `state` parameter.
+      The script should output a valid Jira state.
+    type: string
+    default: ""
+  state:
+    description: >
+      A valid Jira state for the build/deployment. If set as `unknown` (default),
+      then the state will be determined by the job status as `successful` or `failed`.
+      `rolled_back` is only valid for deployments.
+
+      See https://developer.atlassian.com/cloud/jira/software/rest/api-group-deployments/#api-rest-deployments-0-1-bulk-post or
+      https://developer.atlassian.com/cloud/jira/software/rest/api-group-builds/#api-rest-builds-0-1-bulk-post
+    type: enum
+    enum: [unknown, pending, in_progress, cancelled, failed, rolled_back, successful]
+    default: unknown
+  when:
+    description: >
+      The condition in which the notification should be sent. By default, the notification will always
+      be sent. This is useful in cases you want to selectively report multiple times in a single job
+      or separate successful reporting into a separate job that can be rerun if the Jira request fails
+      without having to rerun the entire build.
+    type: enum
+    enum: [always, on_fail, on_success]
+    default: always
+steps:
+  - checkout
+  - run:
+      name: Fetch changes
+      command: git fetch
+  - notify:
+      base_revision: << parameters.base_revision >>
+      debug: << parameters.debug >>
+      detect_rollback: << parameters.detect_rollback >>
+      environment_type: << parameters.environment_type >>
+      environment: << parameters.environment >>
+      ignore_errors: << parameters.ignore_errors >>
+      issue_keys_script: << parameters.issue_keys_script >>
+      issue_regexp: << parameters.issue_regexp >>
+      job_type: << parameters.job_type >>
+      oidc_token: << parameters.oidc_token >>
+      pipeline_id: << parameters.pipeline_id >>
+      pipeline_number: << parameters.pipeline_number >>
+      service_id: << parameters.service_id >>
+      state_script: << parameters.state_script >>
+      state: << parameters.state >>
+      webhook_url: << parameters.webhook_url >>
+      when: << parameters.when >>
